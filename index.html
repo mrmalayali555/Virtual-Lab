@@ -1,1 +1,1302 @@
-under development..please try after 5pm
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realistic Virtual Salt Analysis Lab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: pan-y;
+        }
+        
+        .lab-container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .header {
+            background: rgba(0,0,0,0.3);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .header h1 {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .lab-bench {
+            background: linear-gradient(180deg, #8b7355 0%, #6b5943 100%);
+            min-height: 300px;
+            padding: 20px;
+            position: relative;
+            border-top: 8px solid #5a4632;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .test-tube-stand {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 30px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .test-tube {
+            width: 50px;
+            height: 180px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.1) 100%);
+            border: 3px solid rgba(200,220,240,0.6);
+            border-radius: 0 0 25px 25px;
+            position: relative;
+            box-shadow: 
+                inset -2px 0 8px rgba(255,255,255,0.4),
+                inset 2px 0 8px rgba(0,0,0,0.2),
+                0 10px 20px rgba(0,0,0,0.3);
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .test-tube:hover {
+            transform: translateY(-5px);
+        }
+        
+        .test-tube.selected {
+            border-color: #3498db;
+            box-shadow: 
+                inset -2px 0 8px rgba(255,255,255,0.4),
+                inset 2px 0 8px rgba(0,0,0,0.2),
+                0 0 25px rgba(52, 152, 219, 0.8),
+                0 10px 20px rgba(0,0,0,0.3);
+            transform: translateY(-5px);
+        }
+        
+        .test-tube-liquid {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 0;
+            background: transparent;
+            transition: height 0.5s, background 0.5s;
+            border-radius: 0 0 22px 22px;
+        }
+        
+        .test-tube-label {
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .bubbles {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .bubble {
+            position: absolute;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), rgba(255,255,255,0.3));
+            border-radius: 50%;
+            animation: rise 2s ease-in infinite;
+        }
+        
+        @keyframes rise {
+            0% { bottom: 0; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { bottom: 100%; opacity: 0; }
+        }
+        
+        .fumes {
+            position: absolute;
+            top: -50px;
+            width: 100%;
+            height: 100px;
+            pointer-events: none;
+        }
+        
+        .fume {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(8px);
+            animation: smoke 3s ease-out infinite;
+        }
+        
+        @keyframes smoke {
+            0% { bottom: 0; opacity: 0.8; transform: translateX(0) scale(0.5); }
+            100% { bottom: 100px; opacity: 0; transform: translateX(20px) scale(1.5); }
+        }
+        
+        .shelf-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(231,76,60,0.4);
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        
+        .shelf-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(231,76,60,0.6);
+        }
+        
+        .shelf-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            z-index: 200;
+            animation: fadeIn 0.3s;
+        }
+        
+        .shelf-overlay.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .shelf-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            max-height: 75%;
+            background: linear-gradient(180deg, #34495e 0%, #2c3e50 100%);
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            overflow-y: auto;
+            animation: slideUp 0.4s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        
+        .shelf-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .shelf-header h2 {
+            font-size: 22px;
+        }
+        
+        .close-shelf {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .close-shelf:hover {
+            transform: rotate(90deg);
+        }
+        
+        .reagent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 20px;
+            padding-bottom: 20px;
+        }
+        
+        .reagent-bottle {
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .reagent-bottle:active {
+            transform: scale(0.95);
+        }
+        
+        .bottle-container {
+            position: relative;
+            width: 100%;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .bottle {
+            width: 60px;
+            height: 100px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.15) 100%);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 5px 5px 10px 10px;
+            position: relative;
+            box-shadow: inset -2px 0 8px rgba(255,255,255,0.3), inset 2px 0 8px rgba(0,0,0,0.2);
+        }
+        
+        .bottle-cap {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 15px;
+            background: #2c3e50;
+            border-radius: 3px 3px 0 0;
+            border: 1px solid #1a252f;
+        }
+        
+        .bottle-liquid {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            right: 5px;
+            height: 70%;
+            border-radius: 2px 2px 8px 8px;
+        }
+        
+        .bottle-label {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.9);
+            padding: 2px 5px;
+            border-radius: 2px;
+            font-size: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+            white-space: nowrap;
+        }
+        
+        .paper-ball-container {
+            position: relative;
+            width: 100%;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .paper-ball {
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle at 30% 30%, #fff, #e0e0e0);
+            border-radius: 50%;
+            box-shadow: 
+                inset -3px -3px 8px rgba(0,0,0,0.3),
+                inset 3px 3px 8px rgba(255,255,255,0.8),
+                2px 2px 10px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        
+        .paper-ball::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.8), transparent);
+        }
+        
+        .reagent-name {
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+        
+        .reagent-formula {
+            color: rgba(255,255,255,0.7);
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        
+        .action-panel {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            margin: 20px;
+            border-radius: 10px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .action-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 3px 10px rgba(52,152,219,0.3);
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52,152,219,0.5);
+        }
+        
+        .action-btn.heat {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            box-shadow: 0 3px 10px rgba(231,76,60,0.3);
+        }
+        
+        .action-btn.heat:hover {
+            box-shadow: 0 5px 15px rgba(231,76,60,0.5);
+        }
+        
+        .action-btn.clear {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+        }
+        
+        .observations-panel {
+            background: rgba(255,255,255,0.95);
+            margin: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .obs-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+        }
+        
+        .obs-entry {
+            background: #ecf0f1;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .obs-entry strong {
+            color: #2c3e50;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .obs-entry p {
+            color: #555;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .conclusion-panel {
+            background: rgba(255,255,255,0.95);
+            margin: 20px;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .conclusion-panel select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #3498db;
+            border-radius: 6px;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39,174,96,0.4);
+        }
+        
+        .result-box {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .result-box.correct {
+            background: #d5f4e6;
+            border: 2px solid #27ae60;
+        }
+        
+        .result-box.incorrect {
+            background: #fadbd8;
+            border: 2px solid #e74c3c;
+        }
+        
+        .flame {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 60px;
+            background: radial-gradient(ellipse at bottom, #ff6b00 0%, #ff8c00 30%, #ffa500 60%, transparent 100%);
+            border-radius: 50% 50% 0 0;
+            filter: blur(2px);
+            animation: flicker 0.3s infinite alternate;
+            display: none;
+        }
+        
+        @keyframes flicker {
+            0% { transform: translateX(-50%) scale(1); }
+            100% { transform: translateX(-50%) scale(1.1) translateY(-5px); }
+        }
+        
+        .status-bar {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            color: white;
+            text-align: center;
+            font-size: 13px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .success-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+        
+        .success-modal.active {
+            display: flex;
+        }
+        
+        .success-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            animation: bounceIn 0.5s;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: rotateIn 0.6s;
+        }
+        
+        @keyframes rotateIn {
+            0% { transform: rotate(-200deg) scale(0); opacity: 0; }
+            100% { transform: rotate(0) scale(1); opacity: 1; }
+        }
+        
+        .success-content h2 {
+            color: #27ae60;
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+        
+        .success-content p {
+            color: #555;
+            font-size: 16px;
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        .success-content .anion-name {
+            color: #2c3e50;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        
+        .success-content .explanation {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #3498db;
+        }
+        
+        .success-content .explanation strong {
+            color: #2c3e50;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .whatsapp-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 25px 0;
+        }
+        
+        .whatsapp-box h3 {
+            color: #2c3e50;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .whatsapp-box p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .modal-btn {
+            flex: 1;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .modal-btn.whatsapp {
+            background: #25D366;
+            color: white;
+        }
+        
+        .modal-btn.whatsapp:hover {
+            background: #1da851;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.4);
+        }
+        
+        .modal-btn.new-salt {
+            background: #3498db;
+            color: white;
+        }
+        
+        .modal-btn.new-salt:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        @media (max-width: 768px) {
+            .test-tube-stand {
+                gap: 15px;
+            }
+            
+            .test-tube {
+                width: 40px;
+                height: 140px;
+            }
+            
+            .reagent-grid {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                gap: 15px;
+            }
+            
+            .header h1 {
+                font-size: 18px;
+            }
+            
+            .success-content {
+                padding: 30px 20px;
+            }
+            
+            .modal-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="lab-container">
+        <div class="header">
+            <h1>🧪 Virtual Lab By <a style="color:red;text-decoration:none;" href="https://chat.whatsapp.com/JpHDzIg5J7S9uKHHIyWO24">+2 Exam Crackers</a></h1>
+            <p>Identify the unknown anion through confirmatory tests</p>
+        </div>
+        
+        <div class="status-bar" id="statusBar">
+            Click on a test tube to select it, then click "Open Lab Shelf" to begin testing
+        </div>
+        
+        <div class="lab-bench">
+            <div class="test-tube-stand">
+                <div>
+                    <div class="test-tube selected" id="testTube1">
+                        <div class="test-tube-liquid" id="liquid1"></div>
+                        <div class="bubbles" id="bubbles1"></div>
+                        <div class="fumes" id="fumes1"></div>
+                        <div class="flame" id="flame1"></div>
+                    </div>
+                    <div class="test-tube-label">Test Tube 1</div>
+                </div>
+                
+                <div>
+                    <div class="test-tube" id="testTube2">
+                        <div class="test-tube-liquid" id="liquid2"></div>
+                        <div class="bubbles" id="bubbles2"></div>
+                        <div class="fumes" id="fumes2"></div>
+                        <div class="flame" id="flame2"></div>
+                    </div>
+                    <div class="test-tube-label">Test Tube 2</div>
+                </div>
+                
+                <div>
+                    <div class="test-tube" id="testTube3">
+                        <div class="test-tube-liquid" id="liquid3"></div>
+                        <div class="bubbles" id="bubbles3"></div>
+                        <div class="fumes" id="fumes3"></div>
+                        <div class="flame" id="flame3"></div>
+                    </div>
+                    <div class="test-tube-label">Test Tube 3</div>
+                </div>
+            </div>
+            
+            <div class="action-panel">
+                <button class="action-btn" id="addSaltBtn">Add Salt Sample</button>
+                <button class="action-btn heat" id="heatBtn">🔥 Heat</button>
+                <button class="action-btn clear" id="clearBtn">Clear All Tubes</button>
+            </div>
+        </div>
+        
+        <div class="observations-panel">
+            <div class="obs-title">📝 Observations</div>
+            <div id="observations">
+                <p style="text-align: center; color: #7f8c8d; padding: 20px;">
+                    No observations yet. Start by adding salt and reagents to test tubes.
+                </p>
+            </div>
+        </div>
+        
+        <div class="conclusion-panel">
+            <h3 style="color: #2c3e50; margin-bottom: 10px;">Your Conclusion:</h3>
+            <select id="anionSelect">
+                <option value="">-- Select the Anion Present --</option>
+                <option value="carbonate">Carbonate (CO₃²⁻)</option>
+                <option value="acetate">Acetate (CH₃COO⁻)</option>
+                <option value="chloride">Chloride (Cl⁻)</option>
+                <option value="nitrate">Nitrate (NO₃⁻)</option>
+                <option value="sulfate">Sulfate (SO₄²⁻)</option>
+            </select>
+            <button class="submit-btn" id="submitBtn">Submit Answer</button>
+            <div id="resultBox" class="result-box"></div>
+        </div>
+        
+        <button class="shelf-button" id="shelfBtn">🧴 Open Lab Shelf</button>
+        
+        <div class="shelf-overlay" id="shelfOverlay">
+            <div class="shelf-content" id="shelfContent">
+                <div class="shelf-header">
+                    <h2>Laboratory Reagents & Materials</h2>
+                    <button class="close-shelf" id="closeShelfBtn">✕</button>
+                </div>
+                
+                <div class="reagent-grid" id="reagentGrid">
+                    <div class="reagent-bottle" data-reagent="dil_hcl">
+                        <div class="bottle-container">
+                            <div class="bottle">
+                                <div class="bottle-cap"></div>
+                                <div class="bottle-liquid" style="background: rgba(220,220,220,0.4);"></div>
+                                <div class="bottle-label">HCl</div>
+                            </div>
+                        </div>
+                        <div class="reagent-name">Dilute HCl</div>
+                        <div class="reagent-formula">Hydrochloric Acid</div>
+                    </div>
+                    
+                    <div class="reagent-bottle" data-reagent="dil_h2so4">
+                        <div class="bottle-container">
+                            <div class="bottle">
+                                <div class="bottle-cap"></div>
+                                <div class="bottle-liquid" style="background: rgba(220,220,220,0.4);"></div>
+                                <div class="bottle-label">H₂SO₄</div>
+                            </div>
+                        </div>
+                        <div class="reagent-name">Dilute H₂SO₄</div>
+                        <div class="reagent-formula">Sulfuric Acid</div>
+                    </div>
+                    
+                    <div class="reagent-bottle" data-reagent="conc_h2so4">
+                        <div class="bottle-container">
+                            <div class="bottle">
+                                <div class="bottle-cap"></div>
+                                <div class="bottle-liquid" style="background: rgba(200,200,200,0.6);"></div>
+                                <div class="bottle-label">H₂SO₄</div>
+                            </div>
+                        </div>
+                        <div class="reagent-name">Conc. H₂SO₄</div>
+                        <div class="reagent-formula">Concentrated</div>
+                    </div>
+                    
+                    <div class="reagent-bottle" data-reagent="bacl2">
+                        <div class="bottle-container">
+                            <div class="bottle">
+                                <div class="bottle-cap"></div>
+                                <div class="bottle-liquid" style="background: rgba(240,240,255,0.6);"></div>
+                                <div class="bottle-label">BaCl₂</div>
+                            </div>
+                        </div>
+                        <div class="reagent-name">BaCl₂</div>
+                        <div class="reagent-formula">Barium Chloride</div>
+                    </div>
+                    
+                    <div class="reagent-bottle" data-reagent="agno3">
+                        <div class="bottle-container">
+                            <div class="bottle">
+                                <div class="bottle-cap"></div>
+                                <div class="bottle-liquid" style="background: rgba(240,240,245,0.5);"></div>
+                                <div class="bottle-label">AgNO₃</div>
+                            </div>
+                        </div>
+                        <div class="reagent-name">AgNO₃</div>
+                        <div class="reagent-formula">Silver Nitrate</div>
+                    </div>
+                    
+                    <div class="reagent-bottle" data-reagent="fecl3">
+                        <div class="bottle-container">
+                            <div class="bottle">
+                                <div class="bottle-cap"></div>
+                                <div class="bottle-liquid" style="background: rgba(180,120,60,0.6);"></div>
+                                <div class="bottle-label">FeCl₃</div>
+                            </div>
+                        </div>
+                        <div class="reagent-name">Neutral FeCl₃</div>
+                        <div class="reagent-formula">Ferric Chloride</div>
+                    </div>
+                    
+                    <div class="reagent-bottle" data-reagent="lead_acetate">
+                        <div class="bottle-container">
+                            <div class="bottle">
+                                <div class="bottle-cap"></div>
+                                <div class="bottle-liquid" style="background: rgba(250,250,255,0.6);"></div>
+                                <div class="bottle-label">Pb(Ac)₂</div>
+                            </div>
+                        </div>
+                        <div class="reagent-name">Lead Acetate</div>
+                        <div class="reagent-formula">Pb(CH₃COO)₂</div>
+                    </div>
+                    
+                    <div class="reagent-bottle" data-reagent="feso4">
+                        <div class="bottle-container">
+                            <div class="bottle">
+                                <div class="bottle-cap"></div>
+                                <div class="bottle-liquid" style="background: rgba(180,220,180,0.6);"></div>
+                                <div class="bottle-label">FeSO₄</div>
+                            </div>
+                        </div>
+                        <div class="reagent-name">Fresh FeSO₄</div>
+                        <div class="reagent-formula">Ferrous Sulfate</div>
+                    </div>
+                    
+                    <div class="reagent-bottle" data-reagent="nh4oh">
+                        <div class="bottle-container">
+                            <div class="bottle">
+                                <div class="bottle-cap"></div>
+                                <div class="bottle-liquid" style="background: rgba(230,240,255,0.5);"></div>
+                                <div class="bottle-label">NH₄OH</div>
+                            </div>
+                        </div>
+                        <div class="reagent-name">NH₄OH</div>
+                        <div class="reagent-formula">Ammonium Hydroxide</div>
+                    </div>
+                    
+                    <div class="reagent-bottle" data-reagent="paper_ball">
+                        <div class="paper-ball-container">
+                            <div class="paper-ball"></div>
+                        </div>
+                        <div class="reagent-name">Paper Ball</div>
+                        <div class="reagent-formula">For Nitrate Test</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="success-modal" id="successModal">
+            <div class="success-content">
+                <div class="success-icon">🎉</div>
+                <h2>Excellent Work!</h2>
+                <p>You correctly identified the anion:</p>
+                <div class="anion-name" id="successAnionName"></div>
+                <div class="explanation">
+                    <strong>Key Confirmatory Tests:</strong>
+                    <p id="successExplanation"></p>
+                </div>
+                <div class="whatsapp-box">
+                    <h3>📚 Join +2 Exam Crackers Group!</h3>
+                    <p>Get more Chemistry practical help, notes, tips & exam preparation materials</p>
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-btn whatsapp" id="whatsappBtn">
+                        Join WhatsApp Now
+                    </button>
+                    <button class="modal-btn new-salt" id="newSaltBtn">
+                        Try New Salt
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAnion = '';
+        let currentTube = 1;
+        let tubeContents = { 1: [], 2: [], 3: [] };
+        let observations = [];
+        let hasSaltInTubes = { 1: false, 2: false, 3: false };
+        
+        const anions = ['carbonate', 'acetate', 'chloride', 'nitrate', 'sulfate'];
+        
+        function initLab() {
+            currentAnion = anions[Math.floor(Math.random() * anions.length)];
+            console.log('Secret anion:', currentAnion);
+            clearAllTubes();
+            observations = [];
+            updateObservations();
+            document.getElementById('anionSelect').value = '';
+            document.getElementById('resultBox').style.display = 'none';
+            currentTube = 1;
+            selectTube(1);
+        }
+        
+        function selectTube(tubeNumber) {
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById('testTube' + i).classList.remove('selected');
+            }
+            currentTube = tubeNumber;
+            document.getElementById('testTube' + tubeNumber).classList.add('selected');
+            updateStatus('Test Tube ' + tubeNumber + ' selected. Add reagents or perform tests.');
+        }
+        
+        function toggleShelf() {
+            document.getElementById('shelfOverlay').classList.toggle('active');
+        }
+        
+        function addSalt() {
+            if (!hasSaltInTubes[currentTube]) {
+                hasSaltInTubes[currentTube] = true;
+                const liquid = document.getElementById('liquid' + currentTube);
+                liquid.style.height = '30px';
+                liquid.style.background = 'rgba(255,255,255,0.7)';
+                addObservation('Tube ' + currentTube, 'Salt sample added to test tube.');
+                updateStatus('Salt added to Tube ' + currentTube + '. Now add reagents for testing.');
+            } else {
+                alert('Tube ' + currentTube + ' already has salt!');
+            }
+        }
+        
+        function selectReagent(reagent) {
+            if (!hasSaltInTubes[currentTube]) {
+                alert('Please add salt sample first!');
+                return;
+            }
+            
+            tubeContents[currentTube].push(reagent);
+            performReaction(currentTube, reagent);
+            toggleShelf();
+            updateStatus('Reagent added to Tube ' + currentTube + '. You can add more reagents or switch tubes.');
+        }
+        
+        function performReaction(tube, reagent) {
+            const liquid = document.getElementById('liquid' + tube);
+            const bubbles = document.getElementById('bubbles' + tube);
+            const fumes = document.getElementById('fumes' + tube);
+            
+            let height = parseInt(liquid.style.height || '30') + 25;
+            if (height > 140) height = 140;
+            liquid.style.height = height + 'px';
+            
+            const result = analyzeReaction(tubeContents[tube]);
+            
+            if (result.effect === 'effervescence') {
+                liquid.style.background = 'rgba(200,220,255,0.7)';
+                createBubbles(bubbles);
+                addObservation('Tube ' + tube + ': ' + result.title, result.observation);
+            } else if (result.effect === 'brown_fumes') {
+                liquid.style.background = 'rgba(180,140,100,0.7)';
+                createFumes(fumes, '#8B4513');
+                addObservation('Tube ' + tube + ': ' + result.title, result.observation);
+            } else if (result.effect === 'white_fumes') {
+                liquid.style.background = 'rgba(220,230,255,0.7)';
+                createFumes(fumes, '#E0E0E0');
+                addObservation('Tube ' + tube + ': ' + result.title, result.observation);
+            } else if (result.effect === 'red_color') {
+                liquid.style.background = 'rgba(200,50,50,0.8)';
+                addObservation('Tube ' + tube + ': ' + result.title, result.observation);
+            } else if (result.effect === 'white_ppt') {
+                liquid.style.background = 'rgba(250,250,255,0.9)';
+                addObservation('Tube ' + tube + ': ' + result.title, result.observation);
+            } else if (result.effect === 'brown_ring') {
+                liquid.style.background = 'linear-gradient(to top, rgba(200,220,240,0.8) 0%, rgba(200,220,240,0.8) 60%, rgba(139,69,19,0.9) 60%, rgba(139,69,19,0.9) 75%, rgba(200,220,240,0.8) 75%)';
+                addObservation('Tube ' + tube + ': ' + result.title, result.observation);
+            } else if (result.effect === 'vinegar_smell') {
+                liquid.style.background = 'rgba(255,250,200,0.7)';
+                addObservation('Tube ' + tube + ': ' + result.title, result.observation);
+            } else if (result.effect === 'green') {
+                liquid.style.background = 'rgba(180,220,180,0.7)';
+                addObservation('Tube ' + tube + ': ' + result.title, result.observation);
+            } else {
+                liquid.style.background = 'rgba(200,220,240,0.7)';
+                addObservation('Tube ' + tube + ': ' + result.title, result.observation);
+            }
+        }
+        
+        function analyzeReaction(contents) {
+            const lastReagent = contents[contents.length - 1];
+            const allReagents = contents;
+            
+            if (currentAnion === 'carbonate') {
+                if (lastReagent === 'dil_hcl') {
+                    return {
+                        title: 'Salt + Dilute HCl',
+                        observation: 'Brisk effervescence observed! Colorless, odorless gas evolved (CO₂). Gas turns lime water milky.',
+                        effect: 'effervescence'
+                    };
+                }
+                if (lastReagent === 'bacl2') {
+                    return { title: 'Salt Solution + BaCl₂', observation: 'White precipitate formed (BaCO₃).', effect: 'white_ppt' };
+                }
+                if (allReagents.includes('bacl2') && lastReagent === 'dil_hcl') {
+                    return { title: 'White ppt + Dilute HCl', observation: 'White precipitate dissolves in dilute HCl with effervescence!', effect: 'effervescence' };
+                }
+            }
+            
+            if (currentAnion === 'sulfate') {
+                if (lastReagent === 'bacl2') {
+                    return { title: 'Salt Solution + BaCl₂', observation: 'White precipitate formed (BaSO₄).', effect: 'white_ppt' };
+                }
+                if (allReagents.includes('bacl2') && lastReagent === 'dil_hcl') {
+                    return { title: 'White ppt + Dilute HCl', observation: 'White precipitate is INSOLUBLE in dilute HCl (remains unchanged).', effect: 'white_ppt' };
+                }
+                if (lastReagent === 'lead_acetate') {
+                    return { title: 'Salt Solution + Lead Acetate', observation: 'White precipitate of lead sulfate formed.', effect: 'white_ppt' };
+                }
+            }
+            
+            if (currentAnion === 'acetate') {
+                if (lastReagent === 'dil_h2so4') {
+                    return { title: 'Salt + Dilute H₂SO₄', observation: '🍃 Strong vinegar smell detected!', effect: 'vinegar_smell' };
+                }
+                if (lastReagent === 'fecl3') {
+                    return { title: 'Salt Solution + Neutral FeCl₃', observation: '🔴 Deep red colored solution formed (blood red)!', effect: 'red_color' };
+                }
+            }
+            
+            if (currentAnion === 'chloride') {
+                if (lastReagent === 'conc_h2so4') {
+                    return { title: 'Salt + Conc. H₂SO₄', observation: 'Pungent smelling gas evolved (HCl gas)! Colorless steamy fumes observed.', effect: 'white_fumes' };
+                }
+                if (lastReagent === 'agno3') {
+                    return { title: 'Salt Solution + AgNO₃', observation: 'White curdy precipitate formed (AgCl).', effect: 'white_ppt' };
+                }
+                if (allReagents.includes('agno3') && lastReagent === 'nh4oh') {
+                    return { title: 'AgCl ppt + NH₄OH', observation: 'White curdy precipitate dissolves in excess NH₄OH.', effect: 'none' };
+                }
+            }
+            
+            if (currentAnion === 'nitrate') {
+                if (allReagents.includes('conc_h2so4') && lastReagent === 'paper_ball') {
+                    return { title: 'Salt + Conc. H₂SO₄ + Paper Ball', observation: '🟤 Paper ball turns brown! Plenty of brown gas (NO₂) evolved.', effect: 'brown_fumes' };
+                }
+                if (lastReagent === 'conc_h2so4' && !allReagents.includes('paper_ball')) {
+                    return { title: 'Salt + Conc. H₂SO₄', observation: 'Acid added. Add a paper ball and heat for nitrate test, OR add FeSO₄ first for brown ring test.', effect: 'none' };
+                }
+                if (lastReagent === 'feso4') {
+                    return { title: 'Salt Solution + Fresh FeSO₄', observation: 'Green solution formed. Now add concentrated H₂SO₄ for brown ring test.', effect: 'green' };
+                }
+                if (allReagents.includes('feso4') && lastReagent === 'conc_h2so4') {
+                    return { title: 'Brown Ring Test', observation: '🟤 BROWN RING formed at the junction!', effect: 'brown_ring' };
+                }
+            }
+            
+            return { title: 'Added ' + lastReagent.replace(/_/g, ' '), observation: 'Reagent added. No Characteristic Observation', effect: 'none' };
+        }
+        
+        function createBubbles(container) {
+            container.innerHTML = '';
+            for (let i = 0; i < 15; i++) {
+                setTimeout(function() {
+                    const bubble = document.createElement('div');
+                    bubble.className = 'bubble';
+                    const size = Math.random() * 8 + 4;
+                    bubble.style.width = size + 'px';
+                    bubble.style.height = size + 'px';
+                    bubble.style.left = Math.random() * 80 + 10 + '%';
+                    bubble.style.animationDelay = Math.random() * 0.5 + 's';
+                    bubble.style.animationDuration = Math.random() * 1 + 1.5 + 's';
+                    container.appendChild(bubble);
+                }, i * 100);
+            }
+            setTimeout(function() { container.innerHTML = ''; }, 3000);
+        }
+        
+        function createFumes(container, color) {
+            container.innerHTML = '';
+            for (let i = 0; i < 8; i++) {
+                setTimeout(function() {
+                    const fume = document.createElement('div');
+                    fume.className = 'fume';
+                    const size = Math.random() * 30 + 20;
+                    fume.style.width = size + 'px';
+                    fume.style.height = size + 'px';
+                    fume.style.left = Math.random() * 60 + 20 + '%';
+                    fume.style.background = color;
+                    fume.style.animationDelay = Math.random() * 0.5 + 's';
+                    fume.style.animationDuration = Math.random() * 1.5 + 2 + 's';
+                    container.appendChild(fume);
+                }, i * 150);
+            }
+            setTimeout(function() { container.innerHTML = ''; }, 4000);
+        }
+        
+        function heatTube() {
+            if (!hasSaltInTubes[currentTube]) {
+                alert('Please add salt sample to the tube first!');
+                return;
+            }
+            
+            const flame = document.getElementById('flame' + currentTube);
+            const fumes = document.getElementById('fumes' + currentTube);
+            const contents = tubeContents[currentTube];
+            
+            flame.style.display = 'block';
+            
+            setTimeout(function() {
+                flame.style.display = 'none';
+                
+                if (currentAnion === 'nitrate' && contents.includes('conc_h2so4') && contents.includes('paper_ball')) {
+                    createFumes(fumes, '#8B4513');
+                    addObservation('Tube ' + currentTube + ': Heating', '🟤 On heating, the paper ball turns brown and reddish-brown fumes (NO₂) evolved vigorously!');
+                } else if (currentAnion === 'nitrate' && contents.includes('conc_h2so4')) {
+                    createFumes(fumes, '#8B4513');
+                    addObservation('Tube ' + currentTube + ': Heating', 'On heating with conc. H₂SO₄, reddish brown fumes of NO₂ gas evolved!');
+                } else {
+                    addObservation('Tube ' + currentTube + ': Heating', 'Test tube heated. Observe any changes.');
+                }
+            }, 2000);
+        }
+        
+        function clearAllTubes() {
+            for (let i = 1; i <= 3; i++) {
+                const liquid = document.getElementById('liquid' + i);
+                const bubbles = document.getElementById('bubbles' + i);
+                const fumes = document.getElementById('fumes' + i);
+                liquid.style.height = '0';
+                liquid.style.background = 'transparent';
+                bubbles.innerHTML = '';
+                fumes.innerHTML = '';
+                tubeContents[i] = [];
+                hasSaltInTubes[i] = false;
+            }
+            currentTube = 1;
+            selectTube(1);
+            updateStatus('All tubes cleared. Ready for new test.');
+        }
+        
+        function updateStatus(message) {
+            document.getElementById('statusBar').textContent = message;
+        }
+        
+        function addObservation(title, text) {
+            observations.push({ title: title, text: text });
+            updateObservations();
+        }
+        
+        function updateObservations() {
+            const obsDiv = document.getElementById('observations');
+            if (observations.length === 0) {
+                obsDiv.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 20px;">No observations yet. Start by adding salt and reagents to test tubes.</p>';
+            } else {
+                obsDiv.innerHTML = observations.map(function(obs) {
+                    return '<div class="obs-entry"><strong>' + obs.title + '</strong><p>' + obs.text + '</p></div>';
+                }).join('');
+                obsDiv.scrollTop = obsDiv.scrollHeight;
+            }
+        }
+        
+        function submitAnswer() {
+            const selected = document.getElementById('anionSelect').value;
+            if (!selected) {
+                alert('Please select an anion from the dropdown!');
+                return;
+            }
+            
+            const resultBox = document.getElementById('resultBox');
+            resultBox.style.display = 'block';
+            
+            if (selected === currentAnion) {
+                showSuccessModal();
+            } else {
+                resultBox.className = 'result-box incorrect';
+                resultBox.innerHTML = '<h3>❌ Incorrect - Try Again!</h3><p>You selected <strong>' + getAnionName(selected) + '</strong></p><p>The correct answer is <strong>' + getAnionName(currentAnion) + '</strong></p><p style="margin-top: 10px;"><strong>Hint:</strong> ' + getHint(currentAnion, selected) + '</p>';
+            }
+        }
+        
+        function showSuccessModal() {
+            document.getElementById('successAnionName').textContent = getAnionName(currentAnion);
+            document.getElementById('successExplanation').textContent = getExplanation(currentAnion);
+            document.getElementById('successModal').classList.add('active');
+        }
+        
+        function getAnionName(anion) {
+            const names = {
+                'carbonate': 'Carbonate (CO₃²⁻)',
+                'acetate': 'Acetate (CH₃COO⁻)',
+                'chloride': 'Chloride (Cl⁻)',
+                'nitrate': 'Nitrate (NO₃⁻)',
+                'sulfate': 'Sulfate (SO₄²⁻)'
+            };
+            return names[anion];
+        }
+        
+        function getExplanation(anion) {
+            const explanations = {
+                'carbonate': 'Brisk effervescence with dilute HCl (CO₂ gas), white precipitate with BaCl₂ that dissolves in dilute HCl with effervescence.',
+                'acetate': 'Vinegar smell with dilute H₂SO₄, deep red color with neutral FeCl₃ solution.',
+                'chloride': 'White curdy precipitate with AgNO₃ soluble in excess NH₄OH, white fumes with conc. H₂SO₄.',
+                'nitrate': 'Brown ring test positive (brown ring with FeSO₄ + conc. H₂SO₄), reddish brown fumes (NO₂) on heating with conc. H₂SO₄ and paper ball.',
+                'sulfate': 'White precipitate with BaCl₂ insoluble in dilute HCl, white precipitate with lead acetate.'
+            };
+            return explanations[anion];
+        }
+        
+        function getHint(correct, selected) {
+            if (correct === 'carbonate' && selected === 'sulfate') {
+                return 'Both give white precipitate with BaCl₂, but carbonate dissolves in dilute HCl with effervescence.';
+            }
+            if (correct === 'sulfate' && selected === 'carbonate') {
+                return 'Check if the white precipitate dissolves in dilute HCl. Sulfate precipitate remains insoluble.';
+            }
+            if (correct === 'chloride') {
+                return 'Look for white curdy precipitate with AgNO₃ that dissolves in NH₄OH, or white steamy fumes with conc. H₂SO₄.';
+            }
+            if (correct === 'nitrate') {
+                return 'Perform brown ring test or heat with conc. H₂SO₄ + paper ball to get brown fumes.';
+            }
+            if (correct === 'acetate') {
+                return 'Test for vinegar smell with dilute H₂SO₄ and deep red color with neutral FeCl₃.';
+            }
+            return 'Review your observations and match them with standard confirmatory tests.';
+        }
+        
+        // Event listeners
+        document.getElementById('testTube1').addEventListener('click', function() { selectTube(1); });
+        document.getElementById('testTube2').addEventListener('click', function() { selectTube(2); });
+        document.getElementById('testTube3').addEventListener('click', function() { selectTube(3); });
+        document.getElementById('addSaltBtn').addEventListener('click', addSalt);
+        document.getElementById('heatBtn').addEventListener('click', heatTube);
+        document.getElementById('clearBtn').addEventListener('click', clearAllTubes);
+        document.getElementById('shelfBtn').addEventListener('click', toggleShelf);
+        document.getElementById('closeShelfBtn').addEventListener('click', toggleShelf);
+        document.getElementById('submitBtn').addEventListener('click', submitAnswer);
+        document.getElementById('whatsappBtn').addEventListener('click', function() {
+            window.open('https://chat.whatsapp.com/JpHDzIg5J7S9uKHHIyWO24', '_blank');
+        });
+        document.getElementById('newSaltBtn').addEventListener('click', function() {
+            document.getElementById('successModal').classList.remove('active');
+            initLab();
+        });
+        
+        // Reagent selection
+        document.getElementById('reagentGrid').addEventListener('click', function(e) {
+            const bottle = e.target.closest('.reagent-bottle');
+            if (bottle) {
+                const reagent = bottle.getAttribute('data-reagent');
+                if (reagent) selectReagent(reagent);
+            }
+        });
+        
+        // Close shelf when clicking overlay
+        document.getElementById('shelfOverlay').addEventListener('click', function(e) {
+            if (e.target.id === 'shelfOverlay') {
+                toggleShelf();
+            }
+        });
+        
+        // Prevent content clicks from closing shelf
+        document.getElementById('shelfContent').addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        
+        initLab();
+    </script>
+</body>
+</html>
